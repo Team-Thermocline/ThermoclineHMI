@@ -1,15 +1,23 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const path = require('path');
 
 module.exports = {
   packagerConfig: {
     asar: true,
+    // Output directory for packaged app
+    out: path.resolve(__dirname, 'dist'),
+    // Executable name
+    executableName: 'thermocline-electron',
+    // Default platform/arch (can be overridden via CLI flags)
+    // Defaults to current platform, use --platform=linux --arch=arm64 for Pi
   },
   rebuildConfig: {},
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
       config: {},
+      platforms: ['win32'],
     },
     {
       name: '@electron-forge/maker-zip',
@@ -17,11 +25,18 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        options: {
+          maintainer: 'Team Thermocline',
+          homepage: 'https://team-thermocline.github.io/',
+        },
+      },
+      platforms: ['linux'],
     },
     {
       name: '@electron-forge/maker-rpm',
       config: {},
+      platforms: ['linux'],
     },
   ],
   plugins: [

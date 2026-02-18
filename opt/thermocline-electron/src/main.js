@@ -80,11 +80,8 @@ async function autoConnectSerial() {
     }
     
     if (!portPath) {
-      console.log('No serial ports found');
       return null;
     }
-    
-    console.log(`Auto-connecting to serial port: ${portPath}`);
     
     // Create serial port connection
     serialPort = new SerialPort({
@@ -98,11 +95,59 @@ async function autoConnectSerial() {
     // Create parser for reading lines
     parser = serialPort.pipe(new ReadlineParser({ delimiter: '\n' }));
     
-    // Handle data
+    // Handle data from parser
     parser.on('data', (data) => {
+      const dataStr = data.toString();
       const mainWindow = BrowserWindow.getAllWindows()[0];
-      if (mainWindow) {
-        mainWindow.webContents.send('serial-data', data.toString());
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        // Append newline so lineProcessor recognizes complete lines
+        // (ReadlineParser strips newlines, but lineProcessor needs them to split)
+        const dataWithNewline = dataStr + '\n';
+        try {
+          mainWindow.webContents.send('serial-data', dataWithNewline);
+        } catch (err) {
+          console.error('Error sending IPC:', err);
+        }
+      }
+    });
+    
+    // Handle parser errors
+    parser.on('error', (err) => {
+      console.error('Parser error:', err);
+    });
+    
+    // Open the port and set up signals
+    serialPort.open((err) => {
+      if (err) {
+        console.error('Error opening serial port:', err);
+        return;
+      }
+      
+      try {
+        // Set DTR (Data Terminal Ready) and RTS (Request To Send) signals
+        // Equivalent to Web Serial API's setSignals({ dataTerminalReady: true })
+        serialPort.set({ dtr: true, rts: false });
+        
+        // Wait a bit, then try toggling DTR to wake up the device
+        setTimeout(() => {
+          try {
+            serialPort.set({ dtr: false });
+            setTimeout(() => {
+              serialPort.set({ dtr: true });
+            }, 100);
+          } catch (err) {
+            // Ignore toggle errors
+          }
+        }, 500);
+        
+        // Flush any existing data in buffers
+        serialPort.flush((err) => {
+          if (err) {
+            console.error('Error flushing serial port:', err);
+          }
+        });
+      } catch (err) {
+        console.error('Error setting up serial port signals:', err);
       }
     });
     
@@ -116,7 +161,6 @@ async function autoConnectSerial() {
     });
     
     serialPort.on('close', () => {
-      console.log('Serial port closed');
       serialPort = null;
       parser = null;
     });

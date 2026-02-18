@@ -10,7 +10,15 @@ contextBridge.exposeInMainWorld('electronSerial', {
   write: (data) => ipcRenderer.invoke('serial-write', data),
   isConnected: () => ipcRenderer.invoke('serial-is-connected'),
   onData: (callback) => {
-    ipcRenderer.on('serial-data', (event, data) => callback(data));
+    // Remove any existing listeners first to avoid duplicates
+    ipcRenderer.removeAllListeners('serial-data');
+    ipcRenderer.on('serial-data', (event, data) => {
+      try {
+        callback(data);
+      } catch (err) {
+        console.error('Error in data callback:', err);
+      }
+    });
   },
   onError: (callback) => {
     ipcRenderer.on('serial-error', (event, error) => callback(error));

@@ -8,7 +8,11 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
+    "package:pi": "electron-forge package --platform=linux --arch=arm64",
+    "package:pi32": "electron-forge package --platform=linux --arch=armv7l",
     "make": "electron-forge make",
+    "make:pi": "electron-forge make --platform=linux --arch=arm64",
+    "make:pi32": "electron-forge make --platform=linux --arch=armv7l",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
   },
