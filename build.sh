@@ -45,6 +45,9 @@ docker run --rm \
     cp br-output/images/sdcard.img /work/output/sdcard.img
   '
 
+# Cleanup
+rm -f "$REPO_ROOT/buildroot/configs/thermocline_defconfig"
+
 # Fix ownership on output files (image)
 docker run --rm \
   -v "$REPO_ROOT:/work" \
