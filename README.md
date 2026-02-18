@@ -1,18 +1,24 @@
 # Team Thermocline HMI
 
-Built with [Buildroot](https://buildroot.org/) for Raspberry Pi 4 (64-bit). Buildroot is a git submodule in `buildroot/`.
+Raspberry Pi 4 (64-bit) image built with [Buildroot](https://buildroot.org/) **inside Docker**, so you don’t need to fix host toolchains (GCC/glibc) on your machine.
 
-## Build
+## Build (Docker)
+
+Requires Docker. From the repo root:
 
 ```shell
-./setup.sh
+./build.sh
 ```
 
-(Initializes the `buildroot` submodule if needed, then builds. First run takes a while.)
+Output will be in `output/sdcard.img`.
 
-## Write to SD card
+First run can take a long time (download + compile). Later runs reuse the image and Buildroot cache.
+
+## Write image to SD card
 
 ```shell
-sudo dd if=buildroot/output/images/sdcard.img of=/dev/sdX status=progress bs=4M
+sudo dd if=output/sdcard.img of=/dev/sdX status=progress bs=4M
 sync
 ```
+
+Replace `sdX` with your SD device (e.g. `sdb`).

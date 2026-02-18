@@ -1,0 +1,7 @@
+# Exclude build output (often root-owned from container, breaks docker build context)
+buildroot/output/
+
+# Optional: shrink context
+buildroot/dl/
+.git/
+output/
