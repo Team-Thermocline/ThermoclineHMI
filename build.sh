@@ -45,5 +45,12 @@ docker run --rm \
     cp br-output/images/sdcard.img /work/output/sdcard.img
   '
 
+# Fix ownership on output files (image)
+docker run --rm \
+  -v "$REPO_ROOT:/work" \
+  -v "$BR_CACHE_DIR/br-output:/work/buildroot/br-output" \
+  "$IMAGE_NAME" \
+  chown -R "$(id -u):$(id -g)" /work/output /work/buildroot/br-output 2>/dev/null || true
+
 echo "Done. Image: $OUTPUT_DIR/sdcard.img"
 echo "Write to SD: sudo dd if=$OUTPUT_DIR/sdcard.img of=/dev/sdX status=progress bs=4M && sync"
