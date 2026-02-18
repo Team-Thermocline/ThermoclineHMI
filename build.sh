@@ -23,18 +23,26 @@ docker build -t "$IMAGE_NAME" "$REPO_ROOT"
 
 mkdir -p "$OUTPUT_DIR"
 
+# Create cache directories for Buildroot (persist between builds)
+BR_CACHE_DIR="$REPO_ROOT/.buildroot-cache"
+mkdir -p "$BR_CACHE_DIR/br-output"
+mkdir -p "$BR_CACHE_DIR/dl"
+
 echo "Building image in container (this will take a while) ..."
+echo "Using cached build directory: $BR_CACHE_DIR/br-output"
+echo "Using cached downloads directory: $BR_CACHE_DIR/dl"
 docker run --rm \
   -v "$REPO_ROOT:/work" \
+  -v "$BR_CACHE_DIR/br-output:/work/buildroot/br-output" \
+  -v "$BR_CACHE_DIR/dl:/work/buildroot/dl" \
   -w /work \
   "$IMAGE_NAME" \
   bash -c '
-    rm -rf buildroot/output &&
     cd buildroot && \
     cp /work/thermocline_defconfig configs/ && \
-    make thermocline_defconfig && \
-    make && \
-    cp output/images/sdcard.img /work/output/sdcard.img
+    make O=br-output thermocline_defconfig && \
+    make O=br-output && \
+    cp br-output/images/sdcard.img /work/output/sdcard.img
   '
 
 echo "Done. Image: $OUTPUT_DIR/sdcard.img"
