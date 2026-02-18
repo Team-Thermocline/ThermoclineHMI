@@ -1,7 +1,7 @@
 [Unit]
 Description=Thermocline HMI Electron Application
-After=graphical.target
-Wants=graphical.target
+After=graphical.target xserver.service
+Wants=graphical.target xserver.service
 
 [Service]
 Type=simple
