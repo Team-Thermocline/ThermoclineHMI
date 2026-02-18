@@ -1,8 +1,29 @@
-body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
-  margin: auto;
-  max-width: 38rem;
-  padding: 2rem;
+:root {
+  --blue-900: #0b2747;
+  --blue-700: #123a6b;
+  --blue-500: #1f5fa8;
+  --cyan-500: #00ffff;
+  --red-600: #c62828;
+  --red-700: #b71c1c;
+  --edge: #0e0e10;
+  --bg: #0a0a0b;
+  --text: #e6e6e6;
+  --muted: #b7c0ca;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }

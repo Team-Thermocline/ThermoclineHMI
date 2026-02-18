@@ -11,6 +11,8 @@
     overflow: hidden;
     width: 100vw;
     height: 100vh;
+    background: var(--bg, #0a0a0b);
+    color: var(--text, #e6e6e6);
   }
 
   :global(html) {
@@ -18,10 +20,13 @@
     padding: 0;
     width: 100vw;
     height: 100vh;
+    background: var(--bg, #0a0a0b);
+    color: var(--text, #e6e6e6);
   }
 
   :global(#app) {
     width: 100vw;
     height: 100vh;
+    background: var(--bg, #0a0a0b);
   }
 </style>

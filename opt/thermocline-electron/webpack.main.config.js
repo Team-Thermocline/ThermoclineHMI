@@ -8,4 +8,10 @@ module.exports = {
   module: {
     rules: require('./webpack.rules'),
   },
+  externals: [
+    'serialport',
+    '@serialport/parser-readline',
+    '@serialport/bindings-cpp',
+  ],
+  target: 'electron-main',
 };

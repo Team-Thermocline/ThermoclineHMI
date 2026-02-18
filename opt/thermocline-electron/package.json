@@ -28,16 +28,20 @@
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-webpack": "^7.11.1",
     "@electron/fuses": "^1.8.0",
+    "@electron/rebuild": "^4.0.3",
     "@vercel/webpack-asset-relocator-loader": "^1.7.3",
     "css-loader": "^6.11.0",
     "electron": "40.4.1",
+    "electron-rebuild": "^3.2.9",
     "node-loader": "^2.1.0",
     "style-loader": "^3.3.4",
     "svelte": "^4.2.20",
     "svelte-loader": "^3.2.4"
   },
   "dependencies": {
+    "@serialport/parser-readline": "^12.0.0",
     "electron-squirrel-startup": "^1.0.1",
+    "serialport": "^12.0.0",
     "uplot": "^1.6.32"
   }
 }
