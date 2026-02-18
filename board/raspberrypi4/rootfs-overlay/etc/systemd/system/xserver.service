@@ -1,0 +1,12 @@
+[Unit]
+Description=X11 Server
+After=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/X :0 -nolisten tcp vt7
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target

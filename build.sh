@@ -22,7 +22,8 @@ docker run --rm \
   bash -c '
     rm -rf buildroot/output &&
     cd buildroot && \
-    make BR2_DEFCONFIG=/work/thermocline_defconfig defconfig && \
+    cp /work/thermocline_defconfig configs/ && \
+    make thermocline_defconfig && \
     make && \
     cp output/images/sdcard.img /work/output/sdcard.img
   '
