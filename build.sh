@@ -9,6 +9,15 @@ OUTPUT_DIR="$REPO_ROOT/output"
 echo "Initializing Buildroot submodule ..."
 git submodule update --init "$REPO_ROOT/buildroot"
 
+echo "Building Electron app for Raspberry Pi (arm64)..."
+cd "$REPO_ROOT/opt/thermocline-electron"
+if [ ! -d "node_modules" ]; then
+    echo "Installing npm dependencies..."
+    npm install
+fi
+npm run package:pi
+cd "$REPO_ROOT"
+
 echo "Building Docker image (if needed) ..."
 docker build -t "$IMAGE_NAME" "$REPO_ROOT"
 
