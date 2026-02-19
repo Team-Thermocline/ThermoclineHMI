@@ -57,6 +57,13 @@ if [ -f "${TARGET_DIR}/etc/systemd/system/xserver.service" ]; then
         "${TARGET_DIR}/etc/systemd/system/graphical.target.wants/xserver.service"
 fi
 
+# Enable SSH for debugging
+if [ -f "${TARGET_DIR}/usr/lib/systemd/system/sshd.service" ]; then
+    mkdir -p "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants"
+    ln -sf /usr/lib/systemd/system/sshd.service \
+        "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants/sshd.service"
+fi
+
 # Create .xinitrc to start Electron when X starts
 mkdir -p "${TARGET_DIR}/root"
 cat > "${TARGET_DIR}/root/.xinitrc" << 'EOF'
