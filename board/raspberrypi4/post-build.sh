@@ -57,6 +57,12 @@ if [ -f "${TARGET_DIR}/etc/systemd/system/xserver.service" ]; then
         "${TARGET_DIR}/etc/systemd/system/graphical.target.wants/xserver.service"
 fi
 
+# So X can use vt1 (HDMI), mask getty on tty1 so the display shows X
+if [ -d "${TARGET_DIR}/etc/systemd/system/getty.target.wants" ]; then
+    rm -f "${TARGET_DIR}/etc/systemd/system/getty.target.wants/getty@tty1.service"
+fi
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/getty@tty1.service"
+
 # Enable SSH for debugging
 if [ -f "${TARGET_DIR}/usr/lib/systemd/system/sshd.service" ]; then
     mkdir -p "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants"

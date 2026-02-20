@@ -33,6 +33,8 @@ BR2_PACKAGE_RPI_FIRMWARE_CONFIG_FILE="board/raspberrypi4-64/config_4_64bit.txt"
 
 # Init system - use systemd for service management
 BR2_INIT_SYSTEMD=y
+# Boot into graphical target (x/electron)
+BR2_PACKAGE_SYSTEMD_DEFAULT_TARGET="graphical.target"
 
 # X11 server and minimal graphics stack
 BR2_PACKAGE_XORG7=y
