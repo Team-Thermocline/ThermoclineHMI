@@ -4,6 +4,8 @@ After=graphical.target
 
 [Service]
 Type=simple
+# Hide boot splash so X can take over the display
+ExecStartPre=-/usr/bin/psplash-write "QUIT"
 ExecStart=/usr/bin/X :0 -nolisten tcp -ac vt1
 Restart=always
 RestartSec=5

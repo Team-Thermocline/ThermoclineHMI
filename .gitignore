@@ -2,3 +2,4 @@ buildroot/output/
 output/
 .buildroot-cache/
 xorg-server-*/
+*.*~

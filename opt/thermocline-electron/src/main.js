@@ -52,38 +52,58 @@ app.on('window-all-closed', () => {
   }
 });
 
-// Serial port management
+// Serial port management (non-fatal: app runs fine without serial)
 let serialPort = null;
 let parser = null;
+let serialConnectInProgress = false;
 
-// Auto-detect and connect to serial port
-async function autoConnectSerial() {
+function notifySerialStatus(mainWindow, status, detail = null) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
   try {
-    // List all
+    mainWindow.webContents.send('serial-status', { status, detail });
+    if (status === 'open-failed' || status === 'error') {
+      mainWindow.webContents.send('serial-error', detail || status);
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function clearSerialPort() {
+  if (serialPort) {
+    try {
+      serialPort.removeAllListeners();
+      serialPort.close(() => {});
+    } catch (e) { /* ignore */ }
+    serialPort = null;
+    parser = null;
+  }
+}
+
+// Auto-detect and connect to serial port (failure is non-fatal)
+async function autoConnectSerial() {
+  if (serialConnectInProgress) return null;
+  serialConnectInProgress = true;
+  const mainWindow = BrowserWindow.getAllWindows()[0];
+
+  try {
     const ports = await SerialPort.list();
-    
-    // On final system, only one tty should be avail
-    const desiredPorts = ['/dev/ttyUSB0', '/dev/ttyACM0', '/dev/ttyUSB1', '/dev/ttyACM1'];
+    // Prefer Pi's second UART (ttyAMA1); never use ttyAMA0 (serial console)
+    const desiredPorts = ['/dev/ttyAMA1', '/dev/ttyUSB0', '/dev/ttyACM0', '/dev/ttyUSB1', '/dev/ttyACM1'];
     let portPath = null;
-    
-    // Try and match port
+
     for (const commonPort of desiredPorts) {
       if (ports.some(p => p.path === commonPort)) {
         portPath = commonPort;
         break;
       }
     }
-    
-    // If no common port found, use the first available port as a fallback/testing
     if (!portPath && ports.length > 0) {
-      portPath = ports[0].path;
+      portPath = ports.find((p) => p.path !== '/dev/ttyAMA0')?.path ?? null;
     }
-    
     if (!portPath) {
+      notifySerialStatus(mainWindow, 'no-port', null);
       return null;
     }
-    
-    // Create serial port connection
+
     serialPort = new SerialPort({
       path: portPath,
       baudRate: 115200,
@@ -91,84 +111,67 @@ async function autoConnectSerial() {
       stopBits: 1,
       parity: 'none',
     });
-    
-    // Create parser for reading lines
+
     parser = serialPort.pipe(new ReadlineParser({ delimiter: '\n' }));
-    
-    // Handle data from parser
+
     parser.on('data', (data) => {
       const dataStr = data.toString();
-      const mainWindow = BrowserWindow.getAllWindows()[0];
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        // Append newline so lineProcessor recognizes complete lines
-        // (ReadlineParser strips newlines, but lineProcessor needs them to split)
-        const dataWithNewline = dataStr + '\n';
+      const win = BrowserWindow.getAllWindows()[0];
+      if (win && !win.isDestroyed()) {
         try {
-          mainWindow.webContents.send('serial-data', dataWithNewline);
-        } catch (err) {
-          console.error('Error sending IPC:', err);
-        }
+          win.webContents.send('serial-data', dataStr + '\n');
+        } catch (e) { /* ignore */ }
       }
     });
-    
-    // Handle parser errors
+
     parser.on('error', (err) => {
-      console.error('Parser error:', err);
+      console.warn('Serial parser warning:', err.message);
     });
-    
-    // Open the port and set up signals
+
     serialPort.open((err) => {
       if (err) {
-        console.error('Error opening serial port:', err);
+        console.warn('Serial port unavailable (non-fatal):', err.message);
+        clearSerialPort();
+        notifySerialStatus(mainWindow, 'open-failed', err.message);
         return;
       }
-      
+
+      notifySerialStatus(mainWindow, 'connected', portPath);
+      if (mainWindow) mainWindow.webContents.send('serial-auto-connected', portPath);
+
       try {
-        // Set DTR (Data Terminal Ready) and RTS (Request To Send) signals
-        // Equivalent to Web Serial API's setSignals({ dataTerminalReady: true })
         serialPort.set({ dtr: true, rts: false });
-        
-        // Wait a bit, then try toggling DTR to wake up the device
         setTimeout(() => {
           try {
             serialPort.set({ dtr: false });
-            setTimeout(() => {
-              serialPort.set({ dtr: true });
-            }, 100);
-          } catch (err) {
-            // Ignore toggle errors
-          }
+            setTimeout(() => serialPort.set({ dtr: true }), 100);
+          } catch (e) { /* ignore */ }
         }, 500);
-        
-        // Flush any existing data in buffers
-        serialPort.flush((err) => {
-          if (err) {
-            console.error('Error flushing serial port:', err);
-          }
-        });
-      } catch (err) {
-        console.error('Error setting up serial port signals:', err);
+        serialPort.flush(() => {});
+      } catch (e) {
+        console.warn('Serial signals warning:', e.message);
       }
     });
-    
-    // Handle errors
+
     serialPort.on('error', (err) => {
-      console.error('Serial port error:', err);
-      const mainWindow = BrowserWindow.getAllWindows()[0];
-      if (mainWindow) {
-        mainWindow.webContents.send('serial-error', err.message);
-      }
+      console.warn('Serial port error (non-fatal):', err.message);
+      notifySerialStatus(mainWindow, 'error', err.message);
+      clearSerialPort();
     });
-    
+
     serialPort.on('close', () => {
       serialPort = null;
       parser = null;
     });
-    
+
     return portPath;
   } catch (err) {
-    console.error('Error auto-connecting to serial port:', err);
+    console.warn('Serial auto-connect failed (non-fatal):', err.message);
+    notifySerialStatus(mainWindow, 'error', err.message);
+    clearSerialPort();
     return null;
+  } finally {
+    serialConnectInProgress = false;
   }
 }
 
@@ -213,19 +216,9 @@ ipcMain.handle('serial-is-connected', async () => {
   return serialPort && serialPort.isOpen;
 });
 
-// Auto-connect when app is ready
+// Auto-connect when app is ready (failure is non-fatal; app runs without serial)
 app.whenReady().then(() => {
-  // Small delay to ensure window is created
-  setTimeout(() => {
-    autoConnectSerial().then((portPath) => {
-      if (portPath) {
-        const mainWindow = BrowserWindow.getAllWindows()[0];
-        if (mainWindow) {
-          mainWindow.webContents.send('serial-auto-connected', portPath);
-        }
-      }
-    });
-  }, 1000);
+  setTimeout(() => autoConnectSerial(), 1000);
 });
 
 // In this file you can include the rest of your app's specific main process

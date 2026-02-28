@@ -13,8 +13,10 @@ gpu_mem_256=100
 gpu_mem_512=100
 gpu_mem_1024=100
 
-# Serial console (ttyAMA0 115200)
+# Serial console on ttyAMA0 (PL011, 115200); miniuart-bt gives PL011 to console
 dtoverlay=miniuart-bt
+# Second UART for wiring to mainboard (e.g. /dev/ttyAMA1)
+dtoverlay=uart4
 
 dtparam=krnbt=on
 

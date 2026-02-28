@@ -37,6 +37,10 @@ BR2_INIT_SYSTEMD=y
 # Boot into graphical target (x/electron)
 BR2_PACKAGE_SYSTEMD_DEFAULT_TARGET="graphical.target"
 
+# Boot splash (framebuffer) until X starts; quit via psplash-write QUIT in xserver.service
+BR2_PACKAGE_PSPLASH=y
+BR2_PACKAGE_PSPLASH_IMAGE="../board/raspberrypi4/splash.png"
+
 # X11
 BR2_PACKAGE_XORG7=y
 BR2_PACKAGE_XSERVER_XORG_SERVER=y
