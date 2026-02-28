@@ -1,15 +1,15 @@
 [Unit]
-Description=Thermocline Kiosk (Chromium)
-After=systemd-time-wait-sync.service thermocline-web.service
-Requires=systemd-time-wait-sync.service thermocline-web.service
+Description=Thermocline Kiosk (Electron)
 After=multi-user.target
+# Start after time sync if present, but don't block on it
+After=systemd-time-wait-sync.service
 
 [Service]
 User=$KIOSK_USER
-TTYPath=/dev/tty1
+SupplementaryGroups=video render input
 Environment="XDG_RUNTIME_DIR=$KIOSK_RUNDIR"
 Restart=always
-ExecStart=/usr/bin/chromium $KIOSK_URL --kiosk --noerrdialogs --disable-infobars --no-first-run --enable-features=OverlayScrollbar --start-maximized --autoplay-policy=no-user-gesture-required
+ExecStart=/usr/bin/cage -s -- /opt/thermocline-electron/thermocline-electron
 StandardError=journal
 
 [Install]

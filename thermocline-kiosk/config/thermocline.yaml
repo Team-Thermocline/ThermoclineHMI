@@ -1,6 +1,5 @@
-# Thermocline HMI image: webkiosk showing the sender from team-thermocline.github.io
-# Build: run scripts/pack-web.sh first, then:
-#   rpi-image-gen build -S ./thermocline-kiosk -c config/thermocline.yaml
+# Thermocline HMI image: kiosk running thermocline-electron (Sender UI) under Cage.
+# Build: run ./build.sh (builds Electron for Pi, copies to electron-dist, then builds image).
 
 include:
   file: trixie-minbase-ab.yaml
@@ -15,16 +14,13 @@ image:
 
 layer:
   app: thermocline-kiosk
-  splash: rpi-splash-screen
+  # splash: rpi-splash-screen  # disabled: hook exits then mmdebstrap gets "received eof on socket"
 
-# Packed web is at ${@SRCROOT}/web-root (created by scripts/pack-web.sh)
+# SRCROOT is the thermocline-kiosk dir (-S path). electron-dist/ must exist (build.sh copies from thermocline-electron dist).
 thermocline:
   srcroot: ${@SRCROOT}
 
-kiosk:
-  url: "http://localhost:8080/#sender"
-
-# Boot splash (see https://raspberrypi.github.io/rpi-image-gen/config/ - @SRCROOT is -S path)
-splash:
-  image_path: ${@SRCROOT}/splash.tga
-  skip_image_checks: y
+# Boot splash (disabled). Uncomment layer.splash and this block to re-enable.
+# splash:
+#   image_path: ${@SRCROOT}/splash.tga
+#   skip_image_checks: y

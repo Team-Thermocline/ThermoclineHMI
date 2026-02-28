@@ -1,4 +1,5 @@
 output/
 thermocline-kiosk/web-root/
+thermocline-kiosk/electron-dist/
 work/
 *.*~
