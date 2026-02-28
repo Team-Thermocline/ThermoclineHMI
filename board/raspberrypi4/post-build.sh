@@ -53,31 +53,34 @@ for sub in dist/thermocline-electron-linux-arm64 out/thermocline-electron-linux-
     fi
 done
 
-# Enable systemd services
-if [ -f "${TARGET_DIR}/etc/systemd/system/thermocline-electron.service" ]; then
-    mkdir -p "${TARGET_DIR}/etc/systemd/system/graphical.target.wants"
-    ln -sf /etc/systemd/system/thermocline-electron.service \
-        "${TARGET_DIR}/etc/systemd/system/graphical.target.wants/thermocline-electron.service"
+# Use Buildroot's xorg.service (no custom xserver)
+# Don't auto-start Electron so you get a clean serial console and can check logs; run it manually when needed
+
+# Serial login on ttyAMA0 (late start, no device wait - so boot doesn't block)
+if [ -f "${TARGET_DIR}/etc/systemd/system/agetty-serial-ttyAMA0.service" ]; then
+    mkdir -p "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants"
+    ln -sf /etc/systemd/system/agetty-serial-ttyAMA0.service \
+        "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants/agetty-serial-ttyAMA0.service"
 fi
 
-if [ -f "${TARGET_DIR}/etc/systemd/system/xserver.service" ]; then
-    mkdir -p "${TARGET_DIR}/etc/systemd/system/graphical.target.wants"
-    ln -sf /etc/systemd/system/xserver.service \
-        "${TARGET_DIR}/etc/systemd/system/graphical.target.wants/xserver.service"
-fi
-
-# So X can use vt1 (HDMI), mask getty on tty1 so the display shows X
+# Mask getty on tty1 so X can use vt1 for the DSI display
 if [ -d "${TARGET_DIR}/etc/systemd/system/getty.target.wants" ]; then
     rm -f "${TARGET_DIR}/etc/systemd/system/getty.target.wants/getty@tty1.service"
 fi
 ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/getty@tty1.service"
 
-# Enable SSH for debugging
-if [ -f "${TARGET_DIR}/usr/lib/systemd/system/sshd.service" ]; then
-    mkdir -p "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants"
-    ln -sf /usr/lib/systemd/system/sshd.service \
-        "${TARGET_DIR}/etc/systemd/system/multi-user.target.wants/sshd.service"
-fi
+# Don't wait on devices that block boot (serial console + fb0)
+# Psplash and serial-getty would wait up to 90s for dev-fb0 / dev-ttyAMA0
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/psplash-start.service"
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/psplash-systemd.service"
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/serial-getty@ttyAMA0.service"
+
+# Disable SSH + common network services (serial-only device)
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/sshd.service"
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/systemd-networkd.service"
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/systemd-networkd-wait-online.service"
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/systemd-resolved.service"
+ln -sf /dev/null "${TARGET_DIR}/etc/systemd/system/wpa_supplicant.service"
 
 # Create .xinitrc to start Electron when X starts
 mkdir -p "${TARGET_DIR}/root"

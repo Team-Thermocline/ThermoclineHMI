@@ -36,10 +36,13 @@ BR2_PACKAGE_RPI_FIRMWARE_CONFIG_FILE="board/raspberrypi4-64/config_4_64bit.txt"
 BR2_INIT_SYSTEMD=y
 # Boot into graphical target (x/electron)
 BR2_PACKAGE_SYSTEMD_DEFAULT_TARGET="graphical.target"
+# Serial console login on ttyAMA0 (115200)
+BR2_TARGET_GENERIC_GETTY=y
+BR2_TARGET_GENERIC_GETTY_PORT="ttyAMA0"
+BR2_TARGET_GENERIC_GETTY_BAUDRATE_115200=y
 
-# Boot splash (framebuffer) until X starts; quit via psplash-write QUIT in xserver.service
-BR2_PACKAGE_PSPLASH=y
-BR2_PACKAGE_PSPLASH_IMAGE="../board/raspberrypi4/splash.png"
+# No boot splash (avoids dev-fb0 wait; was blocking boot)
+# BR2_PACKAGE_PSPLASH is not set
 
 # X11
 BR2_PACKAGE_XORG7=y
@@ -83,11 +86,6 @@ BR2_PACKAGE_FFMPEG=y
 # X11 fonts (needed for some apps)
 BR2_PACKAGE_FONT_MISC_MISC=y
 BR2_PACKAGE_FONT_CURSOR_MISC=y
-
-# SSH for debugging
-BR2_PACKAGE_OPENSSH=y
-BR2_PACKAGE_OPENSSH_SERVER=y
-BR2_PACKAGE_OPENSSH_KEY_UTILS=y
 
 # Default user (see board/raspberrypi4/users_table.txt)
 BR2_ROOTFS_USERS_TABLES="../board/raspberrypi4/users_table.txt"
