@@ -4,7 +4,7 @@ After=graphical.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/X :0 -nolisten tcp vt1
+ExecStart=/usr/bin/X :0 -nolisten tcp -ac vt1
 Restart=always
 RestartSec=5
 

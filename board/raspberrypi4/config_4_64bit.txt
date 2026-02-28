@@ -1,0 +1,27 @@
+# Pi 4 64-bit config for Thermocline HMI (with official 7" DSI touchscreen)
+# Overrides buildroot's board/raspberrypi4-64/config_4_64bit.txt when copied by build.sh
+# Placed here by Joe
+
+start_file=start4.elf
+fixup_file=fixup4.dat
+
+kernel=Image
+
+disable_overscan=1
+
+gpu_mem_256=100
+gpu_mem_512=100
+gpu_mem_1024=100
+
+# Serial console (ttyAMA0 115200)
+dtoverlay=miniuart-bt
+
+dtparam=krnbt=on
+
+arm_64bit=1
+
+# KMS + official 7" DSI touchscreen
+# ignore_lcd=1 so kernel owns DSI (stops firmware stealing interrupts / DSI timeouts)
+ignore_lcd=1
+dtoverlay=vc4-kms-v3d
+dtoverlay=vc4-kms-dsi-7inch

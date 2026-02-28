@@ -8,6 +8,16 @@ set -e
 BR_DIR="$(cd "$(dirname "$(dirname "$TARGET_DIR")")" && pwd)"
 REPO_ROOT="$(cd "$BR_DIR/.." && pwd)"
 
+# KDrive builds the X server as "X" (or Xfbdev); the package's xorg.service expects /usr/bin/Xorg.
+# Create a symlink so xorg.service finds the binary.
+if [ ! -x "$TARGET_DIR/usr/bin/Xorg" ] && [ -x "$TARGET_DIR/usr/bin/X" ]; then
+    echo "Linking /usr/bin/Xorg -> X for xorg.service"
+    ln -sf X "$TARGET_DIR/usr/bin/Xorg"
+elif [ ! -x "$TARGET_DIR/usr/bin/Xorg" ] && [ -x "$TARGET_DIR/usr/bin/Xfbdev" ]; then
+    echo "Linking /usr/bin/Xorg -> Xfbdev for xorg.service"
+    ln -sf Xfbdev "$TARGET_DIR/usr/bin/Xorg"
+fi
+
 # Run Raspberry Pi 4 board post-build (HDMI console etc.) if it exists
 # Check for both 32-bit and 64-bit board scripts
 if [ -f "$BR_DIR/board/raspberrypi4/post-build.sh" ]; then
@@ -18,31 +28,30 @@ elif [ -f "$BR_DIR/board/raspberrypi4-64/post-build.sh" ]; then
     sh "$BR_DIR/board/raspberrypi4-64/post-build.sh"
 fi
 
-# Overlay repo opt/ onto rootfs (files here end up in the image root)
-# This preserves the existing behavior from scripts/post-build.sh
+# Overlay repo opt/ into rootfs /opt (skip thermocline-electron – we install the packaged app only)
 if [ -d "$REPO_ROOT/opt" ]; then
-    echo "Overlaying opt/ directory..."
+    echo "Overlaying opt/ into rootfs /opt..."
+    mkdir -p "$TARGET_DIR/opt"
     for f in "$REPO_ROOT"/opt/*; do
         [ -e "$f" ] || continue
-        cp -a "$f" "$TARGET_DIR/"
+        [ "$(basename "$f")" = "thermocline-electron" ] && continue
+        cp -a "$f" "$TARGET_DIR/opt/"
     done
 fi
 
-# Install Electron app if it exists (path relative to buildroot topdir)
-# Check for both arm64 and armv7l builds
-if [ -d "${TOPDIR}/../opt/thermocline-electron/dist/thermocline-electron-linux-arm64" ]; then
-    echo "Installing Thermocline Electron app (arm64)..."
-    mkdir -p "${TARGET_DIR}/opt/thermocline-electron"
-    cp -r "${TOPDIR}/../opt/thermocline-electron/dist/thermocline-electron-linux-arm64"/* \
-        "${TARGET_DIR}/opt/thermocline-electron/"
-    chmod +x "${TARGET_DIR}/opt/thermocline-electron/thermocline-electron"
-elif [ -d "${TOPDIR}/../opt/thermocline-electron/dist/thermocline-electron-linux-armv7l" ]; then
-    echo "Installing Thermocline Electron app (armv7l)..."
-    mkdir -p "${TARGET_DIR}/opt/thermocline-electron"
-    cp -r "${TOPDIR}/../opt/thermocline-electron/dist/thermocline-electron-linux-armv7l"/* \
-        "${TARGET_DIR}/opt/thermocline-electron/"
-    chmod +x "${TARGET_DIR}/opt/thermocline-electron/thermocline-electron"
-fi
+# Install packaged Electron app only. Prefer arm64; check dist/ and out/. Nuke existing so no source tree remains.
+ELEC_ROOT="${REPO_ROOT}/opt/thermocline-electron"
+for sub in dist/thermocline-electron-linux-arm64 out/thermocline-electron-linux-arm64 \
+           dist/thermocline-electron-linux-armv7l out/thermocline-electron-linux-armv7l; do
+    if [ -d "${ELEC_ROOT}/${sub}" ]; then
+        echo "Installing Thermocline Electron app from ${sub}..."
+        rm -rf "${TARGET_DIR}/opt/thermocline-electron"
+        mkdir -p "${TARGET_DIR}/opt/thermocline-electron"
+        cp -r "${ELEC_ROOT}/${sub}"/* "${TARGET_DIR}/opt/thermocline-electron/"
+        chmod +x "${TARGET_DIR}/opt/thermocline-electron/thermocline-electron"
+        break
+    fi
+done
 
 # Enable systemd services
 if [ -f "${TARGET_DIR}/etc/systemd/system/thermocline-electron.service" ]; then
