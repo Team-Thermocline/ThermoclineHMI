@@ -8,12 +8,14 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// Set THERMOCLINE_DEV=1 to lock window to 800x480 (final Pi display) for local testing
+const isDevSize = process.env.THERMOCLINE_DEV === '1' || process.env.THERMOCLINE_DEV === 'true';
+
 const createWindow = () => {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 1920,
-    height: 1080,
-    fullscreen: true,
+    width: isDevSize ? 800 : 1920,
+    height: isDevSize ? 480 : 1080,
+    fullscreen: !isDevSize,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       nodeIntegration: false,
@@ -23,6 +25,11 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+
+  // Kiosk / Pi: zoom out to 60% so the UI fits the display
+  mainWindow.webContents.once('did-finish-load', () => {
+    mainWindow.webContents.setZoomFactor(0.65);
+  });
 
   // Open the DevTools (comment out for production)
   // mainWindow.webContents.openDevTools();

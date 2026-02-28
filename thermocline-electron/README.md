@@ -28,6 +28,14 @@ npm install
 npm start
 ```
 
+To test at the Pi display size (800×480), use:
+
+```shell
+npm run start:dev
+```
+
+(This sets `THERMOCLINE_DEV=1`; window is 800×480, not fullscreen.)
+
 ## Packaging
 
 ```shell

@@ -41,4 +41,4 @@ Or use the top-level `./build.sh`, which runs pack-web then rpi-image-gen (in Do
 
 ## Optional
 
-- **Splash** – `convert splash.png -resize 1920x1080 -colors 224 splash.tga`
+- **Boot splash** – `./build.sh` runs `scripts/ensure-splash.sh`, which creates `thermocline-kiosk/splash.tga`

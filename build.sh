@@ -24,6 +24,9 @@ rm -rf "$KIOSK_ELECTRON_DIST"
 mkdir -p "$KIOSK_ELECTRON_DIST"
 cp -a "$PACKAGED"/* "$KIOSK_ELECTRON_DIST/"
 
+echo "Ensuring splash image exists..."
+"$REPO_ROOT/scripts/ensure-splash.sh"
+
 echo "Building image..."
 if ! grep -q binfmt_misc /proc/mounts 2>/dev/null; then
   echo "binfmt_misc is not loaded. Run once on the host: sudo modprobe binfmt_misc"

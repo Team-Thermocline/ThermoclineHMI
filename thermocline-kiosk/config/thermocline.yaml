@@ -14,13 +14,13 @@ image:
 
 layer:
   app: thermocline-kiosk
-  # splash: rpi-splash-screen  # disabled: hook exits then mmdebstrap gets "received eof on socket"
+  splash: rpi-splash-screen
 
 # SRCROOT is the thermocline-kiosk dir (-S path). electron-dist/ must exist (build.sh copies from thermocline-electron dist).
 thermocline:
   srcroot: ${@SRCROOT}
 
-# Boot splash (disabled). Uncomment layer.splash and this block to re-enable.
-# splash:
-#   image_path: ${@SRCROOT}/splash.tga
-#   skip_image_checks: y
+# Boot splash (TGA). Use scripts/ensure-splash.sh or add your own thermocline-kiosk/splash.tga
+splash:
+  image_path: ${@SRCROOT}/splash.tga
+  skip_image_checks: y
