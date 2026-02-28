@@ -24,6 +24,7 @@ thermocline:
 kiosk:
   url: "http://localhost:8080/#sender"
 
-# Boot splash
+# Boot splash (see https://raspberrypi.github.io/rpi-image-gen/config/ - @SRCROOT is -S path)
 splash:
   image_path: ${@SRCROOT}/splash.tga
+  skip_image_checks: y

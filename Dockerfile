@@ -36,6 +36,9 @@ RUN sed -i '/--target .*IGconf_target_path/a\ _bdebstrap+=( --aptopt '\''APT::Ge
 # Skip binfmt_misc check (container cannot bind-mount /proc; host binfmt is used at runtime with --privileged)
 RUN sed -i 's|if ! grep -q "/proc/sys/fs/binfmt_misc"|if false \&\& ! grep -q "/proc/sys/fs/binfmt_misc"|' /opt/rpi-image-gen/lib/dependencies.sh
 
+# Splash hook: use /root/ instead of /tmp/ so the file is visible inside chroot
+RUN sed -i 's|TEMP_IMAGE="/tmp/splash-screen-source.tga"|TEMP_IMAGE="/root/splash-screen-source.tga"|' /opt/rpi-image-gen/layer/rpi/device/splash-screen/splash-screen.yaml
+
 # Default: run rpi-image-gen (caller passes "build ..." etc.)
 ENTRYPOINT ["/opt/rpi-image-gen/rpi-image-gen"]
 CMD ["--help"]
