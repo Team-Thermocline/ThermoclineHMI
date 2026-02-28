@@ -1,5 +1,4 @@
-buildroot/output/
 output/
-.buildroot-cache/
-xorg-server-*/
+thermocline-kiosk/web-root/
+work/
 *.*~

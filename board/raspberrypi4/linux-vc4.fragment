@@ -1,4 +1,0 @@
-# Enable VC4/V3D DRM built-in for Pi 4 (7" DSI, HDMI)
-# So /dev/dri/card0 appears without relying on module autoload
-CONFIG_DRM_VC4=y
-CONFIG_DRM_V3D=y

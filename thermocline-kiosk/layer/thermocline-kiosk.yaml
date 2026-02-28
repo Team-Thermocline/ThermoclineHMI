@@ -1,0 +1,50 @@
+# METABEGIN
+# X-Env-Layer-Name: thermocline-kiosk
+# X-Env-Layer-Category: app
+# X-Env-Layer-Desc: Thermocline HMI web kiosk; serves packed sender from team-thermocline.github.io and runs Chromium in kiosk mode.
+# X-Env-Layer-Requires: rpi-user-credentials,systemd-net-min
+#
+# X-Env-VarPrefix: thermocline
+#
+# X-Env-Var-srcroot: ${@SRCROOT}
+# X-Env-Var-srcroot-Desc: Source root (-S path) for packed web and templates
+# X-Env-Var-srcroot-Required: n
+# X-Env-Var-srcroot-Set: y
+# METAEND
+---
+mmdebstrap:
+  packages:
+    - cage
+    - chromium
+    - python3-minimal
+  customize-hooks:
+    - |
+      export KIOSK_USER="$IGconf_device_user1"
+      export KIOSK_RUNDIR="/home/$IGconf_device_user1"
+      export KIOSK_URL="$IGconf_kiosk_url"
+      SRCROOT="$IGconf_thermocline_srcroot"
+      WEB_ROOT="${SRCROOT}/web-root"
+      mkdir -p "$1/var/www/thermocline"
+      if [ -d "$WEB_ROOT" ] && [ -n "$(ls -A "$WEB_ROOT" 2>/dev/null)" ]; then
+        cp -a "$WEB_ROOT"/* "$1/var/www/thermocline/"
+      fi
+      cat > "$1/etc/systemd/system/thermocline-web.service" << 'UNIT'
+      [Unit]
+      Description=Thermocline local web server
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      ExecStart=/usr/bin/python3 -m http.server 8080 --bind 127.0.0.1 --directory /var/www/thermocline
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      envsubst < "$SRCROOT/kiosk.service.tpl" > "$1/etc/systemd/system/kiosk.service"
+    - $BDEBSTRAP_HOOKS/enable-units "$1" thermocline-web
+    - $BDEBSTRAP_HOOKS/enable-units "$1" kiosk
+    # Remove apt lock/partial so genimage can read the filesystem when checking context
+    - |
+      rm -f "$1/var/lib/apt/lists/lock" 2>/dev/null || true
+      rm -rf "$1/var/lib/apt/lists/partial" 2>/dev/null || true

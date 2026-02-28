@@ -1,6 +1,3 @@
-[submodule "buildroot"]
-	path = buildroot
-	url = https://github.com/buildroot/buildroot.git
-[submodule "opt/thermocline-electron/team-thermocline.github.io"]
-	path = opt/thermocline-electron/team-thermocline.github.io
+[submodule "thermocline-electron/team-thermocline.github.io"]
+	path = thermocline-electron/team-thermocline.github.io
 	url = https://github.com/Team-Thermocline/team-thermocline.github.io.git

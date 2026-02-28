@@ -1,3 +1,0 @@
-# Default debug user for SSH (password: thermocline)
-# username uid group gid password home shell groups comment (video = DRI, dialout = serial)
-thermocline -2 thermocline -2 =thermocline /home/thermocline /bin/sh video,dialout Thermocline debug user
