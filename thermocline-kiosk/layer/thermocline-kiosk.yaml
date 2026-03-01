@@ -17,6 +17,8 @@ mmdebstrap:
     - cage
     - dbus
     - rpi-splash-screen-support
+    - file
+    - coreutils
     # Electron on Linux (minimal deps for headless/DRM)
     - libgtk-3-0
     - libnotify4
@@ -24,15 +26,26 @@ mmdebstrap:
     - libatk1.0-0
     - libgbm1
   customize-hooks:
-    # Splash: copy image into chroot and run configure-splash (no separate splash layer)
+    # Splash: copy image into chroot, run configure-splash, and ensure cmdline has quiet splash
     - |
       CHROOT="$(printf '%s' "$1" | tr -d '\n\r')"
       SPLASH="${IGconf_thermocline_srcroot:-}/splash.tga"
       if [ -f "$SPLASH" ]; then
-        mkdir -p "$CHROOT/tmp"
+        mkdir -p "$CHROOT/tmp" "$CHROOT/opt"
         cp "$SPLASH" "$CHROOT/tmp/splash-screen-source.tga"
-        chroot "$CHROOT" /usr/bin/configure-splash --skip-image-checks /tmp/splash-screen-source.tga
+        cp "$SPLASH" "$CHROOT/opt/thermocline-splash.tga"
+        chroot "$CHROOT" /usr/bin/configure-splash /tmp/splash-screen-source.tga --skip-image-checks --no-cmdline
         rm -f "$CHROOT/tmp/splash-screen-source.tga"
+        chroot "$CHROOT" update-initramfs -u -k all 2>/dev/null || true
+        for cmd in "$CHROOT/boot/firmware/cmdline.txt" "$CHROOT/boot/cmdline.txt"; do
+          if [ -f "$cmd" ]; then
+            line="$(cat "$cmd")"
+            echo "$line" | grep -q '\bquiet\b' || line="$line quiet"
+            echo "$line" | grep -q '\bsplash\b' || line="$line splash"
+            printf '%s\n' "$line" > "$cmd"
+            break
+          fi
+        done
       fi
     - |
       export KIOSK_USER="$IGconf_device_user1"
