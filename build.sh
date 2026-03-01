@@ -34,8 +34,10 @@ if ! grep -q binfmt_misc /proc/mounts 2>/dev/null; then
 fi
 docker run --rm --privileged multiarch/qemu-user-static --reset -p yes 2>/dev/null || true
 docker build -q -t thermocline-rpi-image-gen "$REPO_ROOT"
-# Remove work/output from previous run (root-owned); use container so host needs no sudo
-docker run --rm -v "$REPO_ROOT:/work" --entrypoint "" thermocline-rpi-image-gen rm -rf /work/work /work/output
+# Remove work/output from previous run (root-owned) unless KEEP_WORK=1
+if [ -z "${KEEP_WORK:-}" ]; then
+  docker run --rm -v "$REPO_ROOT:/work" --entrypoint "" thermocline-rpi-image-gen rm -rf /work/work /work/output
+fi
 
 # Fix ownership of work/output on exit
 trap 'docker run --rm -v "$REPO_ROOT:/work" --entrypoint "" thermocline-rpi-image-gen chown -R "$(id -u):$(id -g)" /work/work /work/output 2>/dev/null || true' EXIT

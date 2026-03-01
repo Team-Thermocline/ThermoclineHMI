@@ -1,7 +1,22 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
+
+// Lazy-load serialport so the app starts even when the native bindings are missing (e.g. on Pi image)
+let SerialPort = null;
+let ReadlineParser = null;
+function loadSerialModule() {
+  if (SerialPort !== null) return true;
+  try {
+    const serialport = require('serialport');
+    const readline = require('@serialport/parser-readline');
+    SerialPort = serialport.SerialPort;
+    ReadlineParser = readline.ReadlineParser;
+    return true;
+  } catch (e) {
+    console.warn('Serial module unavailable (native bindings missing?):', e.message);
+    return false;
+  }
+}
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -184,10 +199,13 @@ async function autoConnectSerial() {
 
 // IPC handlers for serial port
 ipcMain.handle('serial-connect', async (event, baudRate) => {
+  if (!loadSerialModule()) {
+    return { success: false, error: 'Serial module not available' };
+  }
   if (serialPort && serialPort.isOpen) {
     return { success: true, port: serialPort.path };
   }
-  
+
   const portPath = await autoConnectSerial();
   if (portPath && serialPort) {
     return { success: true, port: portPath };

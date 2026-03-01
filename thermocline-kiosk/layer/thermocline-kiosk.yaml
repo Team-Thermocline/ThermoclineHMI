@@ -15,6 +15,8 @@
 mmdebstrap:
   packages:
     - cage
+    - dbus
+    - rpi-splash-screen-support
     # Electron on Linux (minimal deps for headless/DRM)
     - libgtk-3-0
     - libnotify4
@@ -22,6 +24,16 @@ mmdebstrap:
     - libatk1.0-0
     - libgbm1
   customize-hooks:
+    # Splash: copy image into chroot and run configure-splash (no separate splash layer)
+    - |
+      CHROOT="$(printf '%s' "$1" | tr -d '\n\r')"
+      SPLASH="${IGconf_thermocline_srcroot:-}/splash.tga"
+      if [ -f "$SPLASH" ]; then
+        mkdir -p "$CHROOT/tmp"
+        cp "$SPLASH" "$CHROOT/tmp/splash-screen-source.tga"
+        chroot "$CHROOT" /usr/bin/configure-splash --skip-image-checks /tmp/splash-screen-source.tga
+        rm -f "$CHROOT/tmp/splash-screen-source.tga"
+      fi
     - |
       export KIOSK_USER="$IGconf_device_user1"
       export KIOSK_RUNDIR="/home/$IGconf_device_user1"
@@ -37,16 +49,9 @@ mmdebstrap:
     # Enable second serial port (ttyAMA1) for HMI/controller; Electron app uses it, console stays on first UART
     - |
       for cfg in "$1/boot/firmware/config.txt" "$1/boot/config.txt"; do
-        if [ -f "$cfg" ]; then
-          grep -q '^enable_uart=' "$cfg" || echo "enable_uart=1" >> "$cfg"
-          grep -q 'dtoverlay=uart2' "$cfg" || echo "# Thermocline HMI: second UART for controller" >> "$cfg" && echo "dtoverlay=uart2" >> "$cfg"
-          break
-        fi
+        [ -f "$cfg" ] && { grep -q '^enable_uart=' "$cfg" || echo "enable_uart=1" >> "$cfg"; grep -q 'dtoverlay=uart2' "$cfg" || { echo "# Thermocline HMI: second UART for controller" >> "$cfg"; echo "dtoverlay=uart2" >> "$cfg"; }; break; }
       done
     # Allow root login with no password (serial/console debugging)
-    - |
-      [ -f "$1/etc/shadow" ] && sed -i 's/^root:[^:]*/root:/' "$1/etc/shadow" || true
+    - '[ -f "$1/etc/shadow" ] && sed -i "s/^root:[^:]*/root:/" "$1/etc/shadow" || true'
     # Remove apt lock/partial so genimage can read the filesystem when checking context
-    - |
-      rm -f "$1/var/lib/apt/lists/lock" 2>/dev/null || true
-      rm -rf "$1/var/lib/apt/lists/partial" 2>/dev/null || true
+    - rm -f "$1/var/lib/apt/lists/lock" 2>/dev/null || true; rm -rf "$1/var/lib/apt/lists/partial" 2>/dev/null || true

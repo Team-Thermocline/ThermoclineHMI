@@ -9,7 +9,9 @@ User=$KIOSK_USER
 SupplementaryGroups=video render input
 Environment="XDG_RUNTIME_DIR=$KIOSK_RUNDIR"
 Restart=always
-ExecStart=/usr/bin/cage -s -- /opt/thermocline-electron/thermocline-electron
+# dbus-run-session gives Electron a session bus (avoids "Failed to connect to the bus" and freezes)
+ExecStart=/usr/bin/dbus-run-session -- /usr/bin/cage -s -- /opt/thermocline-electron/thermocline-electron
+StandardOutput=journal
 StandardError=journal
 
 [Install]
