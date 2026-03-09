@@ -7,6 +7,7 @@ include:
 # Build for Pi 4 (kernel8.img, bcm2711).
 device:
   layer: rpi4
+  dir: device/thermocline-rpi4
 
 image:
   system_part_size: 1500M

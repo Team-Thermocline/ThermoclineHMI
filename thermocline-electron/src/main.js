@@ -108,8 +108,8 @@ async function autoConnectSerial() {
 
   try {
     const ports = await SerialPort.list();
-    // Prefer Pi's second UART (ttyAMA1); never use ttyAMA0 (serial console)
-    const desiredPorts = ['/dev/ttyAMA1', '/dev/ttyUSB0', '/dev/ttyACM0', '/dev/ttyUSB1', '/dev/ttyACM1'];
+    // Prefer Pi's primary UART for HMI (ttyAMA0), then fall back to others
+    const desiredPorts = ['/dev/ttyAMA0', '/dev/ttyAMA1', '/dev/ttyUSB0', '/dev/ttyACM0', '/dev/ttyUSB1', '/dev/ttyACM1'];
     let portPath = null;
 
     for (const commonPort of desiredPorts) {
@@ -119,7 +119,8 @@ async function autoConnectSerial() {
       }
     }
     if (!portPath && ports.length > 0) {
-      portPath = ports.find((p) => p.path !== '/dev/ttyAMA0')?.path ?? null;
+      // No preferred path found, just take the first enumerated port
+      portPath = ports[0].path;
     }
     if (!portPath) {
       notifySerialStatus(mainWindow, 'no-port', null);
