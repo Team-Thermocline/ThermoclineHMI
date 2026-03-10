@@ -1,5 +1,4 @@
-# rpi-image-gen in a container (Debian/Ubuntu env) so you can build on Arch or any host.
-# Run build.sh; it will use this image when rpi-image-gen is not installed on the host.
+# 2026 Team Thermocline SNHU
 
 FROM ubuntu:24.04
 
@@ -9,6 +8,7 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     git \
+    cryptsetup \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone rpi-image-gen; build expects it at /usr/share/rpi-image-gen
@@ -24,7 +24,7 @@ RUN apt-get update \
     mmdebstrap arch-test podman uidmap dbus-user-session zip dosfstools e2fsprogs \
     grep rsync curl mtools zstd pv btrfs-progs dctrl-tools uuid-runtime \
     util-linux fdisk python3-jsonschema python3-pip make build-essential \
-    autoconf automake libtool autopoint flex gettext pkg-config \
+    autoconf automake libtool autopoint flex gettext pkg-config zlib1g-dev \
     python3-ruamel.yaml qemu-user-static binfmt-support \
     && rm -rf /var/lib/apt/lists/*
 
