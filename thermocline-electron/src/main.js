@@ -160,6 +160,7 @@ async function autoConnectSerial() {
       }
 
       notifySerialStatus(mainWindow, 'connected', portPath);
+      console.log('Serial connected on', portPath);
       if (mainWindow) mainWindow.webContents.send('serial-auto-connected', portPath);
 
       try {

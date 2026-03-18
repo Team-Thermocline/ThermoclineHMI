@@ -6,7 +6,7 @@ After=systemd-time-wait-sync.service
 
 [Service]
 User=$KIOSK_USER
-SupplementaryGroups=video render input
+SupplementaryGroups=video render input dialout
 Environment="XDG_RUNTIME_DIR=$KIOSK_RUNDIR"
 Restart=always
 # dbus-run-session gives Electron a session bus (avoids "Failed to connect to the bus" and freezes)
