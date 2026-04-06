@@ -39,13 +39,12 @@ sudo -u pi env XDG_RUNTIME_DIR=/home/pi \
 
 ---
 
-## 5. Optional: splash and boot
+## 5. Optional: boot cmdline
 
 ```bash
-ls -la /lib/firmware/logo.tga 2>/dev/null || echo "logo.tga not found"
 cat /boot/firmware/cmdline.txt 2>/dev/null || cat /boot/cmdline.txt 2>/dev/null
 ```
 
 ---
 
-Paste the output of **1, 2, 3, and 4** (and 5 if you care about splash) so we can see why the screen is black and fix it.
+Paste the output of **1, 2, 3, and 4** (and 5 if useful) so we can see why the screen is black and fix it.

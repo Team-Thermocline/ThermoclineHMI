@@ -2,15 +2,17 @@
 # Build: run ./build.sh (builds Electron for Pi, copies to electron-dist, then builds image).
 
 include:
-  file: trixie-minbase-ab.yaml
+  file: trixie-minbase.yaml
 
 # Build for Pi 4 (kernel8.img, bcm2711).
+# assetdir -> IGconf_device_assetdir (boot files + post-build.sh); see https://raspberrypi.github.io/rpi-image-gen/execution/
 device:
   layer: rpi4
-  dir: device/thermocline-rpi4
+  assetdir: ${@SRCROOT}/device/thermocline-rpi4
+  user1pass: 'Thermocline1!'
 
 image:
-  system_part_size: 1500M
+  root_part_size: 1500M
   name: thermocline-hmi
 
 layer:
@@ -19,8 +21,3 @@ layer:
 # SRCROOT is the thermocline-kiosk dir (-S path). electron-dist/ must exist.
 thermocline:
   srcroot: ${@SRCROOT}
-
-# Splash: our layer copies image and runs configure-splash. Run scripts/ensure-splash.sh or add splash.tga before building.
-splash:
-  image_path: ${@SRCROOT}/splash.tga
-  skip_image_checks: y
