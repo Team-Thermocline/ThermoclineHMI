@@ -18,6 +18,7 @@ mmdebstrap:
     - dbus
     - file
     - coreutils
+    - wvkbd
     # Electron on Linux (minimal deps for headless/DRM)
     - libgtk-3-0
     - libnotify4
@@ -27,7 +28,6 @@ mmdebstrap:
   customize-hooks:
     - |
       export KIOSK_USER="$IGconf_device_user1"
-      export KIOSK_RUNDIR="/home/$IGconf_device_user1"
       SRCROOT="$IGconf_thermocline_srcroot"
       ELECTRON_SRC="${SRCROOT}/electron-dist"
       ELECTRON_DEST="$1/opt/thermocline-electron"
@@ -35,5 +35,7 @@ mmdebstrap:
       if [ -d "$ELECTRON_SRC" ] && [ -n "$(ls -A "$ELECTRON_SRC" 2>/dev/null)" ]; then
         cp -a "$ELECTRON_SRC"/* "$ELECTRON_DEST/"
       fi
+      install -m 755 "$SRCROOT/scripts/thermocline-kiosk-launch.sh" "$1/usr/local/bin/thermocline-kiosk-launch"
+      install -m 644 "$SRCROOT/pam.d/cage" "$1/etc/pam.d/cage"
       envsubst < "$SRCROOT/kiosk.service.tpl" > "$1/etc/systemd/system/kiosk.service"
     - $BDEBSTRAP_HOOKS/enable-units "$1" kiosk

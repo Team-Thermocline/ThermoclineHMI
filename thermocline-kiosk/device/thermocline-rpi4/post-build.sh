@@ -10,7 +10,7 @@ if [ -f "$here/cmdline.txt" ]; then
 	install -m 644 "$here/cmdline.txt" "$rootfs/boot/firmware/cmdline.txt"
 fi
 
-# Full boot/firmware/config.txt: Pi 4 + official 7" DSI + uart2 (see comments in file).
+# Full boot/firmware/config.txt: Pi 4 + official 7" DSI + miniuart-bt (PL011 on GPIO 14/15).
 if [ -f "$here/config.txt" ]; then
 	install -m 644 "$here/config.txt" "$rootfs/boot/firmware/config.txt"
 fi

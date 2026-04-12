@@ -108,8 +108,9 @@ async function autoConnectSerial() {
 
   try {
     const ports = await SerialPort.list();
-    // Prefer Pi's primary UART for HMI (ttyAMA0), then fall back to others
-    const desiredPorts = ['/dev/ttyAMA0', '/dev/ttyAMA1', '/dev/ttyUSB0', '/dev/ttyACM0', '/dev/ttyUSB1', '/dev/ttyACM1'];
+    // GPIO 14/15 = primary UART: use /dev/serial0 (symlink) or /dev/ttyAMA0 — NOT uart2's ttyAMA1/2 (different pins).
+    // /dev/ttyACM* is USB CDC. See https://www.raspberrypi.com/documentation/computers/configuration.html#primary-and-secondary-uart
+    const desiredPorts = ['/dev/serial0', '/dev/ttyAMA0', '/dev/ttyAMA1', '/dev/ttyAMA2', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyACM0', '/dev/ttyACM1'];
     let portPath = null;
 
     for (const commonPort of desiredPorts) {

@@ -1,0 +1,7 @@
+# PAM for systemd PAMName=cage (Thermocline kiosk). Invoked only by kiosk.service.
+# pam_systemd registers the session with logind (DRM seat + XDG_RUNTIME_DIR).
+# Auth must not prompt: systemd supplies no password (pam_unix auth would fail for locked-down users).
+auth		required	pam_permit.so
+account		required	pam_unix.so
+session		required	pam_unix.so
+session		required	pam_systemd.so

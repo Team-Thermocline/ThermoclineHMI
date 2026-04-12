@@ -51,8 +51,9 @@ enable_uart=1
 
 [pi4]
 enable_uart=1
-# Thermocline HMI: second PL011 for controller (see cmdline console=ttyAMA1). Uncomment when boot is stable.
-#dtoverlay=uart2
+# Put PL011 on GPIO 14/15 as /dev/ttyAMA0 (default is mini-UART ttyS0 there while BT uses PL011).
+# Use disable-bt instead if you do not need Bluetooth at all.
+dtoverlay=miniuart-bt
 
 [cm4]
 # Enable host mode on the 2711 built-in XHCI USB controller.
