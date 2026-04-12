@@ -51,9 +51,12 @@ enable_uart=1
 
 [pi4]
 enable_uart=1
-# Put PL011 on GPIO 14/15 as /dev/ttyAMA0 (default is mini-UART ttyS0 there while BT uses PL011).
+# Put PL011 on GPIO 14/15 as /dev/ttyAMA0 (/dev/serial0); Bluetooth on mini-UART.
 # Use disable-bt instead if you do not need Bluetooth at all.
 dtoverlay=miniuart-bt
+# Second PL011 for controller serial: UART2 on GPIO 0 (TXD2) / GPIO 1 (RXD2) — HAT ID pins; avoid HAT EEPROM conflict if unused.
+# Device is often /dev/ttyAMA1 (enumeration can be ttyAMA2; see ls /dev/ttyAMA*). Thermocline Electron prefers AMA1/AMA2 first.
+dtoverlay=uart2
 
 [cm4]
 # Enable host mode on the 2711 built-in XHCI USB controller.

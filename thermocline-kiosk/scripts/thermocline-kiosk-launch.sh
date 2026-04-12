@@ -5,6 +5,8 @@ set -eu
 
 WVK_LOG=/tmp/thermocline-wvkbd.log
 LAUNCH_LOG=/tmp/thermocline-kiosk-launch.log
+# Cage often does not forward Electron stdout/stderr to journalctl -u kiosk; tee everything here.
+ELECTRON_LOG=/tmp/thermocline-electron.log
 
 _log() {
 	ts=$(date '+%Y-%m-%dT%H:%M:%S')
@@ -65,4 +67,6 @@ if [ "${THERMO_DISABLE_OSK:-0}" != 1 ]; then
 	) &
 fi
 
+_log "electron stdout/stderr -> $ELECTRON_LOG"
+exec >>"$ELECTRON_LOG" 2>&1
 exec "$app"

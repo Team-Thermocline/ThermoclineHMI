@@ -34,7 +34,15 @@ fi
 install -m 755 "$here/thermocline-kiosk-launch.sh" /usr/local/bin/thermocline-kiosk-launch
 install -m 644 "$root/pam.d/cage" /etc/pam.d/cage
 export KIOSK_USER
+if [ -z "$KIOSK_USER" ]; then
+	echo "KIOSK_USER is empty; pass a username: sudo $0 joe" >&2
+	exit 1
+fi
 envsubst '$KIOSK_USER' <"$root/kiosk.service.tpl" >/etc/systemd/system/kiosk.service
+if grep -qF '$KIOSK_USER' /etc/systemd/system/kiosk.service || ! grep -qE '^User=[^[:space:]]+' /etc/systemd/system/kiosk.service; then
+	echo "Generated kiosk.service has invalid User= line (envsubst problem?). Check /etc/systemd/system/kiosk.service" >&2
+	exit 1
+fi
 
 # Let the kiosk user keep a /run/user/$uid session without a console login (helps some Wayland setups).
 if command -v loginctl >/dev/null 2>&1; then

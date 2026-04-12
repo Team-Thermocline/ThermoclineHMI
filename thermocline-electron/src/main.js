@@ -1,6 +1,11 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 
+// Kiosk / Pi: Chromium uses large shared-memory segments; small /dev/shm can break GPU/zygote.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('disable-dev-shm-usage');
+}
+
 // Lazy-load serialport so the app starts even when the native bindings are missing (e.g. on Pi image)
 let SerialPort = null;
 let ReadlineParser = null;
@@ -25,6 +30,11 @@ if (require('electron-squirrel-startup')) {
 
 // Set THERMOCLINE_DEV=1 to lock window to 800x480 (final Pi display) for local testing
 const isDevSize = process.env.THERMOCLINE_DEV === '1' || process.env.THERMOCLINE_DEV === 'true';
+
+function serialTrace(...parts) {
+  if (process.env.THERMO_SERIAL_TRACE !== '1' && process.env.THERMO_SERIAL_TRACE !== 'true') return;
+  console.log('[serial-trace]', ...parts);
+}
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -79,7 +89,12 @@ let serialPort = null;
 let parser = null;
 let serialConnectInProgress = false;
 
+function releaseSerialConnectLock() {
+  serialConnectInProgress = false;
+}
+
 function notifySerialStatus(mainWindow, status, detail = null) {
+  console.log('[serial]', 'status', status, detail != null ? detail : '');
   if (!mainWindow || mainWindow.isDestroyed()) return;
   try {
     mainWindow.webContents.send('serial-status', { status, detail });
@@ -107,10 +122,19 @@ async function autoConnectSerial() {
   const mainWindow = BrowserWindow.getAllWindows()[0];
 
   try {
+    if (!loadSerialModule()) {
+      console.warn('[serial] auto-connect skipped: serialport native module not available');
+      notifySerialStatus(mainWindow, 'error', 'Serial module not available');
+      releaseSerialConnectLock();
+      return null;
+    }
+
     const ports = await SerialPort.list();
-    // GPIO 14/15 = primary UART: use /dev/serial0 (symlink) or /dev/ttyAMA0 — NOT uart2's ttyAMA1/2 (different pins).
-    // /dev/ttyACM* is USB CDC. See https://www.raspberrypi.com/documentation/computers/configuration.html#primary-and-secondary-uart
-    const desiredPorts = ['/dev/serial0', '/dev/ttyAMA0', '/dev/ttyAMA1', '/dev/ttyAMA2', '/dev/ttyUSB0', '/dev/ttyUSB1', '/dev/ttyACM0', '/dev/ttyACM1'];
+    const listed = ports.map((p) => p.path).join(', ') || '(none)';
+    console.log('[serial] enumerated ports:', listed);
+
+    // Pi 4 UART2 (GPIO 0/1) only — no fallback to other ttyAMA* or USB serial.
+    const desiredPorts = ['/dev/ttyAMA2'];
     let portPath = null;
 
     for (const commonPort of desiredPorts) {
@@ -119,12 +143,10 @@ async function autoConnectSerial() {
         break;
       }
     }
-    if (!portPath && ports.length > 0) {
-      // No preferred path found, just take the first enumerated port
-      portPath = ports[0].path;
-    }
     if (!portPath) {
-      notifySerialStatus(mainWindow, 'no-port', null);
+      console.warn('[serial] auto-connect: /dev/ttyAMA2 not in list (need dtoverlay=uart2 + dialout?)');
+      notifySerialStatus(mainWindow, 'no-port', listed);
+      releaseSerialConnectLock();
       return null;
     }
 
@@ -134,12 +156,14 @@ async function autoConnectSerial() {
       dataBits: 8,
       stopBits: 1,
       parity: 'none',
+      autoOpen: false, // default true would race with open() below → "Port is opening"
     });
 
     parser = serialPort.pipe(new ReadlineParser({ delimiter: '\n' }));
 
     parser.on('data', (data) => {
       const dataStr = data.toString();
+      serialTrace('RX', dataStr.replace(/\r?\n$/, '').slice(0, 500));
       const win = BrowserWindow.getAllWindows()[0];
       if (win && !win.isDestroyed()) {
         try {
@@ -157,6 +181,7 @@ async function autoConnectSerial() {
         console.warn('Serial port unavailable (non-fatal):', err.message);
         clearSerialPort();
         notifySerialStatus(mainWindow, 'open-failed', err.message);
+        releaseSerialConnectLock();
         return;
       }
 
@@ -176,12 +201,14 @@ async function autoConnectSerial() {
       } catch (e) {
         console.warn('Serial signals warning:', e.message);
       }
+      releaseSerialConnectLock();
     });
 
     serialPort.on('error', (err) => {
       console.warn('Serial port error (non-fatal):', err.message);
       notifySerialStatus(mainWindow, 'error', err.message);
       clearSerialPort();
+      releaseSerialConnectLock();
     });
 
     serialPort.on('close', () => {
@@ -194,9 +221,8 @@ async function autoConnectSerial() {
     console.warn('Serial auto-connect failed (non-fatal):', err.message);
     notifySerialStatus(mainWindow, 'error', err.message);
     clearSerialPort();
+    releaseSerialConnectLock();
     return null;
-  } finally {
-    serialConnectInProgress = false;
   }
 }
 
@@ -230,6 +256,7 @@ ipcMain.handle('serial-disconnect', async () => {
 });
 
 ipcMain.handle('serial-write', async (event, data) => {
+  serialTrace('TX', String(data).slice(0, 500));
   if (serialPort && serialPort.isOpen) {
     return new Promise((resolve) => {
       serialPort.write(data + '\n', (err) => {

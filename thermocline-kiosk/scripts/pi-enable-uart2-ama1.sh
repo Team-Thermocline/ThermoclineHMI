@@ -1,7 +1,7 @@
 #!/bin/sh
 # Run ON the Raspberry Pi (once): sudo bash pi-enable-uart2-ama1.sh
-# Optional: appends dtoverlay=uart2 for a *second* PL011 on alternate GPIO (e.g. ttyAMA2), not for GPIO 14/15.
-# For controller serial on pins 14/15 only, use miniuart-bt in config.txt (see device/thermocline-rpi4/config.txt).
+# Appends dtoverlay=uart2 if missing (second PL011 on GPIO 0/1; Thermocline images already include it in device/config.txt).
+# Use with miniuart-bt so GPIO 14/15 stays primary PL011; Electron prefers /dev/ttyAMA1 then ttyAMA2 for the controller.
 # See https://www.raspberrypi.com/documentation/computers/configuration.html#mini-uart-and-cpu-core-frequency
 set -eu
 

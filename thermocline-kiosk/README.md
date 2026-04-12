@@ -49,12 +49,12 @@ Use your kiosk username. The unit follows [Cage’s systemd recipe](https://gith
 
 **Numeric entry on the kiosk** — The Sender UI uses an in-app **`KioskNumpad`** (temperature setpoint and graph “Update (ms)” when `isKiosk` is true), so no OS virtual keyboard is required for those fields. The graph omits TDR traces (heater, evaporator, compressor, ambient) in kiosk mode. Optional **wvkbd** is still started by **`thermocline-kiosk-launch.sh`** if installed; see script comments and **`/tmp/thermocline-wvkbd.log`** for diagnostics.
 
-**GPIO 14/15 serial** — not USB `ttyACM*`. Stock Pi OS often maps `/dev/serial0` to the mini-UART (`ttyS0`) on those pins while Bluetooth uses the PL011. For a stable PL011 at `/dev/ttyAMA0` on GPIO 14/15, add `dtoverlay=miniuart-bt` (or `dtoverlay=disable-bt` if Bluetooth is not needed) under `[pi4]` in `/boot/firmware/config.txt`, remove any `dtoverlay=uart2` if you are not using extra UART pins, reboot, then confirm `readlink -f /dev/serial0` shows `ttyAMA0`. The kiosk user must be in group `dialout`. Optional: `scripts/pi-enable-uart2-ama1.sh` only enables a **second** PL011 (`uart2`); it is not required for pins 14/15 alone.
+**Controller serial (Pi 4)** — not USB `ttyACM*`. The Thermocline **`config.txt`** uses **`miniuart-bt`** (PL011 on GPIO **14/15** as **`/dev/ttyAMA0`**) and **`dtoverlay=uart2`** (second PL011, usually **`/dev/ttyAMA1`** or **`ttyAMA2`**, on GPIO **0 = TXD2** / **1 = RXD2**, the HAT EEPROM pins). Wire the controller to **UART2**; the app opens **`ttyAMA1`** then **`ttyAMA2`** first. After changes, **`ls -l /dev/ttyAMA*`** and pick the node that matches UART2. Kiosk user needs group **`dialout`**. Manual Pi without the image: `scripts/pi-enable-uart2-ama1.sh` appends **`dtoverlay=uart2`** if missing.
 
 ## Layout
 
 - `config/thermocline.yaml` – Image config (`device.assetid` points at `device/thermocline-rpi4`; includes upstream `trixie-minbase` / `image-rpios` and the kiosk app layer).
-- `device/thermocline-rpi4/` – Device assets: `cmdline.txt`, `config.txt` (Pi 4 + official 7" DSI + `miniuart-bt` for PL011 on GPIO 14/15), and executable `post-build.sh` (installs both into `/boot/firmware/`). See [execution / hooks](https://raspberrypi.github.io/rpi-image-gen/execution/) (`DEVICE_ASSET`, post-build phase).
+- `device/thermocline-rpi4/` – Device assets: `cmdline.txt`, `config.txt` (Pi 4 + DSI + `miniuart-bt` + **`uart2`** for controller on GPIO 0/1), and executable `post-build.sh`. See [execution / hooks](https://raspberrypi.github.io/rpi-image-gen/execution/) (`DEVICE_ASSET`, post-build phase).
 - `layer/thermocline-kiosk.yaml` – App layer: Cage/Electron deps, copies `electron-dist` into the rootfs, installs `kiosk.service`.
 - `kiosk.service.tpl` – systemd unit (`envsubst` with `KIOSK_USER`; VT7 + `PAMName=cage`).
 - `pam.d/cage` – PAM stack for that unit (copied to `/etc/pam.d/cage`).

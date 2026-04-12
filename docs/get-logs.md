@@ -18,6 +18,15 @@ systemctl status kiosk
 journalctl -u kiosk -b --no-pager
 ```
 
+Cage → `thermocline-kiosk-launch.sh` → Electron: **Electron’s stdout/stderr often never reaches this journal stream.** Use the wrapper and Electron log files:
+
+```bash
+tail -200 /tmp/thermocline-kiosk-launch.log
+tail -200f /tmp/thermocline-electron.log
+```
+
+With **`THERMO_SERIAL_TRACE=1`** in `kiosk.service` (see `kiosk.service.tpl`), that file also includes **`[serial-trace] TX` / `RX`** lines from the main process (truncated to 500 chars) plus **`[serial] status …`** events.
+
 ---
 
 ## 3. Cage / Electron / errors in the whole boot log

@@ -37,5 +37,13 @@ mmdebstrap:
       fi
       install -m 755 "$SRCROOT/scripts/thermocline-kiosk-launch.sh" "$1/usr/local/bin/thermocline-kiosk-launch"
       install -m 644 "$SRCROOT/pam.d/cage" "$1/etc/pam.d/cage"
-      envsubst < "$SRCROOT/kiosk.service.tpl" > "$1/etc/systemd/system/kiosk.service"
+      if [ -z "${KIOSK_USER:-}" ]; then
+        echo "thermocline-kiosk layer: KIOSK_USER is empty (set IGconf_device_user1 / export KIOSK_USER)" >&2
+        exit 1
+      fi
+      envsubst '$KIOSK_USER' < "$SRCROOT/kiosk.service.tpl" > "$1/etc/systemd/system/kiosk.service"
+      if grep -qF '$KIOSK_USER' "$1/etc/systemd/system/kiosk.service"; then
+        echo "thermocline-kiosk layer: kiosk.service still contains \$KIOSK_USER" >&2
+        exit 1
+      fi
     - $BDEBSTRAP_HOOKS/enable-units "$1" kiosk

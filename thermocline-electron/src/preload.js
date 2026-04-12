@@ -21,9 +21,11 @@ contextBridge.exposeInMainWorld('electronSerial', {
     });
   },
   onError: (callback) => {
+    ipcRenderer.removeAllListeners('serial-error');
     ipcRenderer.on('serial-error', (event, error) => callback(error));
   },
   onAutoConnected: (callback) => {
+    ipcRenderer.removeAllListeners('serial-auto-connected');
     ipcRenderer.on('serial-auto-connected', (event, portPath) => callback(portPath));
   },
   removeAllListeners: (channel) => {
