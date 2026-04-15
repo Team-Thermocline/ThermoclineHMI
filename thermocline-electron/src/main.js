@@ -48,6 +48,20 @@ const createWindow = () => {
     },
   });
 
+  // Block in-window and new-window navigations to external URLs (kiosk: <a href> would white-screen).
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    try {
+      const current = mainWindow.webContents.getURL();
+      if (!navigationUrl || navigationUrl === current) return;
+      const cur = new URL(current);
+      const next = new URL(navigationUrl);
+      if (cur.origin !== next.origin) event.preventDefault();
+    } catch {
+      event.preventDefault();
+    }
+  });
+
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
