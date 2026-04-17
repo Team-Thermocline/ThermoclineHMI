@@ -8,15 +8,21 @@ KIOSK_ELECTRON_DIST="$REPO_ROOT/thermocline-kiosk/electron-dist"
 
 echo "Building Electron for Pi (linux arm64)..."
 cd "$ELECTRON_DIR"
-if [ ! -d "node_modules" ]; then
-  npm ci
+# Native serialport needs a real aarch64 build; x86_64 cannot cross-compile bindings.
+if [ "$(uname -s)" = "Linux" ] && [ "$(uname -m)" = "aarch64" ]; then
+  if [ ! -d "node_modules" ]; then
+    npm ci
+  fi
+  npm run package:pi
+else
+  echo "Host is not linux/aarch64 — using Docker (see thermocline-electron/scripts/package-pi-docker.sh)."
+  bash scripts/package-pi-docker.sh
 fi
-npm run package:pi
 
-# Forge outputs to out/thermocline-electron-linux-arm64 (see forge.config.js out dir)
+# Electron Forge default: ./out/<executableName>-linux-arm64
 PACKAGED="$ELECTRON_DIR/out/thermocline-electron-linux-arm64"
 if [ ! -f "$PACKAGED/thermocline-electron" ]; then
-  echo "Packaged app not found at $PACKAGED (run npm run package:pi first)"
+  echo "Missing: $PACKAGED/thermocline-electron" >&2
   exit 1
 fi
 echo "Copying Electron app from $PACKAGED to thermocline-kiosk/electron-dist..."

@@ -1,7 +1,9 @@
 const fs = require('fs');
+const { execFileSync } = require('child_process');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 const path = require('path');
+const { rebuild } = require('@electron/rebuild');
 
 // Copy runtime node_modules into packaged app (webpack externals aren't copied by forge).
 // Copying the full production dependency tree avoids "Cannot find module 'x'" from transitive deps.
@@ -14,7 +16,7 @@ function cpRecursive(src, dest) {
       fs.symlinkSync(target, dest);
     } catch {
       // ignore broken symlinks (e.g. .bin)
-        }
+    }
     return;
   }
   if (st.isDirectory()) {
@@ -64,21 +66,65 @@ function copyProductionNodeModules(buildPath, _electronVersion, _platform, _arch
   callback();
 }
 
-// Packaging: Forge + webpack packs only the bundle; runtime deps (serialport, debug, etc.)
-// are copied in afterCopy and unpacked from asar so native .node bindings load.
-// Alternative: asar: false avoids unpack issues but app dir is larger and easier to tamper with.
-// Or: electron-builder has different native-module handling if you ever migrate.
+/** Rebuild native deps in the staged app for the packager target (Electron ABI + platform/arch). */
+function rebuildPackagedNativeModules(buildPath, electronVersion, platform, arch, callback) {
+  const nm = path.join(buildPath, 'node_modules');
+  if (!fs.existsSync(nm)) {
+    return callback();
+  }
+  rebuild({ buildPath, electronVersion, arch, platform, force: true })
+    .then(() => callback())
+    .catch((err) => callback(err));
+}
+
+/** Fail linux/arm64 packages built on non-arm64 hosts if serialport binding is not aarch64 (prevents shipping x86 .node). */
+function assertSerialportBindingMatchesLinuxArm64(buildPath, _electronVersion, platform, arch, callback) {
+  if (platform !== 'linux' || arch !== 'arm64') {
+    return callback();
+  }
+  if (process.platform === 'linux' && process.arch === 'arm64') {
+    return callback();
+  }
+  const binding = path.join(
+    buildPath,
+    'node_modules',
+    '@serialport',
+    'bindings-cpp',
+    'build',
+    'Release',
+    'bindings.node'
+  );
+  if (!fs.existsSync(binding)) {
+    return callback(new Error(`[forge] Missing serialport binding (expected ${binding}). Use Docker or build on Pi.`));
+  }
+  let fileOut = '';
+  try {
+    fileOut = execFileSync('file', [binding], { encoding: 'utf8' });
+  } catch (e) {
+    console.warn('[forge] Could not run `file` to verify bindings.node arch:', e.message);
+    return callback();
+  }
+  if (!/(aarch64|ARM aarch64|ARM arm64)/i.test(fileOut)) {
+    return callback(
+      new Error(
+        `[forge] linux/arm64 build has non-aarch64 serialport binding (${process.platform}/${process.arch}). ` +
+          `${fileOut.trim()}. Use ./build.sh or npm run package:pi:docker (see README).`
+      )
+    );
+  }
+  callback();
+}
+
 module.exports = {
   packagerConfig: {
     asar: true,
     asarUnpack: ['**/node_modules/**'],
-    afterCopy: [copyProductionNodeModules],
-    // Output directory for packaged app
-    out: path.resolve(__dirname, 'dist'),
-    // Executable name
+    afterCopy: [
+      copyProductionNodeModules,
+      rebuildPackagedNativeModules,
+      assertSerialportBindingMatchesLinuxArm64,
+    ],
     executableName: 'thermocline-electron',
-    // Default platform/arch (can be overridden via CLI flags)
-    // Defaults to current platform, use --platform=linux --arch=arm64 for Pi
   },
   rebuildConfig: {},
   makers: [

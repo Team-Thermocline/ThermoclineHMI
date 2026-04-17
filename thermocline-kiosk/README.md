@@ -45,7 +45,9 @@ scp thermocline-kiosk/scripts/install-pi-packages.sh pi@thermoclinehmi: && ssh p
 sudo bash thermocline-kiosk/scripts/install-kiosk-service.sh joe
 ```
 
-Use your kiosk username. The unit follows [Cage’s systemd recipe](https://github.com/cage-kiosk/cage/wiki/Starting-Cage-on-boot-with-systemd): **`PAMName=cage`**, **`/etc/pam.d/cage`** (installed by the script), **`TTYPath=/dev/tty7`**, and **`Conflicts=getty@tty7.service`** so logind/libseat can open DRM (fixing “Permission denied” on tty0 / “Failed to start a DRM session”). The compositor uses **VT7** (`chvt 7`); use **Ctrl+Alt+F1–F6** if you need another console. Check `systemctl status kiosk` and `journalctl -u kiosk -f`. To skip the OSK, add `Environment=THERMO_DISABLE_OSK=1` under `[Service]`, then `sudo systemctl daemon-reload && sudo systemctl restart kiosk`.
+Use your kiosk username. The unit follows [Cage’s systemd recipe](https://github.com/cage-kiosk/cage/wiki/Starting-Cage-on-boot-with-systemd): **`PAMName=cage`**, **`/etc/pam.d/cage`**, **`TTYPath=/dev/tty7`**, **`Conflicts=getty@tty7.service`** (DRM / logind). Compositor uses **VT7** (`chvt 7`); **Ctrl+Alt+F1–F6** for other consoles. Check **`systemctl status kiosk`**.
+
+**Logs:** `journalctl -u kiosk` is often only start/stop. Electron stdout/stderr go to **`/tmp/thermocline-electron.log`**; launcher notes to **`/tmp/thermocline-kiosk-launch.log`**. Syslog tag **`thermocline-kiosk`**: **`journalctl -t thermocline-kiosk -b`**. To skip the OSK: add **`Environment=THERMO_DISABLE_OSK=1`** under **`[Service]`**, then **`sudo systemctl daemon-reload && sudo systemctl restart kiosk`**.
 
 **Numeric entry on the kiosk** — The Sender UI uses an in-app **`KioskNumpad`** (temperature setpoint and graph “Update (ms)” when `isKiosk` is true), so no OS virtual keyboard is required for those fields. The graph omits TDR traces (heater, evaporator, compressor, ambient) in kiosk mode. Optional **wvkbd** is still started by **`thermocline-kiosk-launch.sh`** if installed; see script comments and **`/tmp/thermocline-wvkbd.log`** for diagnostics.
 

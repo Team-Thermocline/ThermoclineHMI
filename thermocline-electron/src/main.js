@@ -9,16 +9,42 @@ if (process.platform === 'linux') {
 // Lazy-load serialport so the app starts even when the native bindings are missing (e.g. on Pi image)
 let SerialPort = null;
 let ReadlineParser = null;
+
+function resolveSerialPortClass(serialportMod) {
+  if (!serialportMod || typeof serialportMod !== 'object') return null;
+  const SP = serialportMod.SerialPort ?? serialportMod.default?.SerialPort;
+  if (typeof SP === 'function' && typeof SP.list === 'function') return SP;
+  return null;
+}
+
 function loadSerialModule() {
-  if (SerialPort !== null) return true;
+  if (SerialPort && ReadlineParser) return true;
   try {
     const serialport = require('serialport');
+    const SP = resolveSerialPortClass(serialport);
+    if (!SP) {
+      const keys =
+        serialport && typeof serialport === 'object' ? Object.keys(serialport).slice(0, 20).join(', ') : '';
+      console.warn('[serial] serialport missing SerialPort.list (native load failed?)', keys || '');
+      SerialPort = null;
+      ReadlineParser = null;
+      return false;
+    }
     const readline = require('@serialport/parser-readline');
-    SerialPort = serialport.SerialPort;
-    ReadlineParser = readline.ReadlineParser;
+    const RL = readline.ReadlineParser ?? readline.default?.ReadlineParser;
+    if (typeof RL !== 'function') {
+      console.warn('[serial] @serialport/parser-readline missing ReadlineParser');
+      SerialPort = null;
+      ReadlineParser = null;
+      return false;
+    }
+    SerialPort = SP;
+    ReadlineParser = RL;
     return true;
   } catch (e) {
     console.warn('Serial module unavailable (native bindings missing?):', e.message);
+    SerialPort = null;
+    ReadlineParser = null;
     return false;
   }
 }
@@ -77,8 +103,37 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+/** Stops after first successful open, or after SERIAL_AUTOCONNECT_MAX_MS. */
+let serialAutoConnectIntervalId = null;
+const SERIAL_AUTOCONNECT_FIRST_MS = 900;
+const SERIAL_AUTOCONNECT_RETRY_MS = 3000;
+const SERIAL_AUTOCONNECT_MAX_MS = 180000;
+
+function startSerialAutoConnectLoop() {
+  if (serialAutoConnectIntervalId != null) return;
+  const tryConnect = () => {
+    if (serialPort && serialPort.isOpen) {
+      if (serialAutoConnectIntervalId != null) {
+        clearInterval(serialAutoConnectIntervalId);
+        serialAutoConnectIntervalId = null;
+      }
+      return;
+    }
+    void autoConnectSerial();
+  };
+  setTimeout(tryConnect, SERIAL_AUTOCONNECT_FIRST_MS);
+  serialAutoConnectIntervalId = setInterval(tryConnect, SERIAL_AUTOCONNECT_RETRY_MS);
+  setTimeout(() => {
+    if (serialAutoConnectIntervalId != null) {
+      clearInterval(serialAutoConnectIntervalId);
+      serialAutoConnectIntervalId = null;
+    }
+  }, SERIAL_AUTOCONNECT_MAX_MS);
+}
+
 app.whenReady().then(() => {
   createWindow();
+  startSerialAutoConnectLoop();
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
@@ -284,11 +339,3 @@ ipcMain.handle('serial-write', async (event, data) => {
 ipcMain.handle('serial-is-connected', async () => {
   return serialPort && serialPort.isOpen;
 });
-
-// Auto-connect when app is ready (failure is non-fatal; app runs without serial)
-app.whenReady().then(() => {
-  setTimeout(() => autoConnectSerial(), 1000);
-});
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.

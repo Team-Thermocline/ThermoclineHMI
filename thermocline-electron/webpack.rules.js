@@ -16,6 +16,10 @@ module.exports = [
       },
     },
   },
+  {
+    test: /\.(png|jpe?g|gif|webp|svg)$/i,
+    type: 'asset/resource',
+  },
   // Svelte loader
   {
     test: /\.svelte$/,
