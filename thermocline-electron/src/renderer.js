@@ -26,6 +26,8 @@
  * ```
  */
 
+// Pull in the website's global styling (buttons, tiles, etc.) for Electron.
+import '../team-thermocline.github.io/src/styles.css';
 import App from './App.svelte';
 
 const app = new App({
